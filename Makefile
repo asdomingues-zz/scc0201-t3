@@ -12,18 +12,25 @@ done: clean compile run
 
 test: clean compile-test run-test
 
-clean:
-	find -name "*~" -exec rm -rf {} \;
-	rm -rf $(BUILD) 
+generate:
+	cp ./cases/iris.data ./iris.data
+	cp ./cases/iris.schema ./iris.schema
 
-compile-test:
+destroy:
+	find -name "iris*" -exec rm {} \;
+
+clean:	destroy
+	find -name "*~" -exec rm -rf {} \;
+	rm -rf $(BUILD)
+
+compile-test: generate
 	mkdir $(BUILD)
 	$(COMPILER) $(SOURCE) -I $(INCLUDES) -o $(BUILD)$(OUTPUT) $(WARNING)
 
 run-test:
 	$(VALGRIND) $(BUILD)$(OUTPUT)
 
-compile:
+compile: generate
 	mkdir $(BUILD)
 	$(COMPILER) $(SOURCE) -I $(INCLUDES) -o $(BUILD)$(OUTPUT)
 

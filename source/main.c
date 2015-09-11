@@ -58,12 +58,17 @@ SCHEMA * getSchema (const char *);
  */
 void freeSchema (SCHEMA *);
 
+void * readData (SCHEMA *, int *);
+
 int main (int argc, char * argv[]) {
 	char * schemaName;
 	SCHEMA * schema;
+	int recordsNumber;
 
 	schemaName = readUntilChar (stdin, '\n');
 	schema = getSchema (schemaName);
+
+	readData (schema, &recordsNumber);
 
 	freeSchema (schema);
 	free (schemaName);
@@ -186,4 +191,23 @@ void freeSchema (SCHEMA * schema) {
 	free (schema->fields);
 	free (schema->table);
 	free (schema);
+}
+
+void * readData (SCHEMA * schema, int * recordsNumber) {
+	void * data = NULL;
+	FILE * pdata = NULL;
+	char * filename = NULL;
+
+	filename = (char *) malloc ((strlen(schema->table) + strlen(".data") + 1) * sizeof (char));
+	strcpy (filename, schema->table);
+	strcpy (filename + strlen (schema->table), ".data");
+	filename[(int) strlen (schema->table) + strlen (".data")] = '\0';
+
+	printf ("%s\n", filename);
+
+	pdata = fopen (filename, "r");
+
+	free (filename);
+
+	return data;
 }
