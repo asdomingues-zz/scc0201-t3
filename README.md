@@ -8,4 +8,6 @@ Allan Silva Domingues | 10/09/15
 --Criadas e documentadas funções essenciais para o programa e de leitura do arquivo textual .schema.
 ASD | 10/09/15 | 21:03
 ---------------------------------------------------------------------------------------------------------
-
+--Criadas funções para ler e interpretar os arquivos de dados .data e criar os arquivos índice .idx.
+ASD | 11/09/15 | 18:51
+---------------------------------------------------------------------------------------------------------

@@ -5,6 +5,7 @@ BUILD=./build/
 OUTPUT=main
 WARNING=-ansi -g -Wall
 VALGRIND=valgrind --show-leak-kinds=all --leak-check=full --track-origins=yes
+CASE=< teste.txt
 
 all: test
 
@@ -19,6 +20,7 @@ generate:
 destroy:
 	rm ./iris.data
 	rm ./iris.schema
+	rm ./iris-id.idx
 
 clean:	destroy
 	find -name "*~" -exec rm -rf {} \;
@@ -29,12 +31,11 @@ compile-test: generate
 	$(COMPILER) $(SOURCE) -I $(INCLUDES) -o $(BUILD)$(OUTPUT) $(WARNING)
 
 run-test:
-	$(VALGRIND) $(BUILD)$(OUTPUT)
+	$(VALGRIND) $(BUILD)$(OUTPUT) $(CASE)
 
 compile: generate
 	mkdir $(BUILD)
 	$(COMPILER) $(SOURCE) -I $(INCLUDES) -o $(BUILD)$(OUTPUT)
 
 run:
-	$(BUILD)$(OUTPUT)
-
+	$(BUILD)$(OUTPUT) $(CASE)

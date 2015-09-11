@@ -48,6 +48,16 @@ char * readUntilChar (FILE *, const char);
  */
 SCHEMA * getSchema (const char *);
 
+/*	dumpSchema ()
+ *
+ *	Função para imprimir a descrição do arquivo de dados baseado no schema fornecido.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura que contém as informações retiradas do .schema.
+ *	- Retorno:
+ *		não há.
+ */
+void dumpSchema (SCHEMA * schema);
+
 /*	freeSchema ()
  *
  *	Função para liberar a estrutura com a descrição dos registros completamente.
@@ -60,17 +70,37 @@ void freeSchema (SCHEMA *);
 
 void * readData (SCHEMA *, int *);
 
+void fprintInt (void *, int, FILE *);
+
+void fprintDouble (void *, int, FILE *);
+
+void fprintString (void *, int, FILE *);
+
+void fwriteInt (void *, int, FILE *);
+
+void fwriteDouble (void *, int, FILE *);
+
+void fwriteString (void *, int, FILE *, int);
+
+int getInternOffset (SCHEMA *, int);
+
+void createIndex (void *, SCHEMA *, int);
+
 int main (int argc, char * argv[]) {
 	char * schemaName;
 	SCHEMA * schema;
+	void * data;
 	int recordsNumber;
 
 	schemaName = readUntilChar (stdin, '\n');
 	schema = getSchema (schemaName);
 
-	readData (schema, &recordsNumber);
+	data = readData (schema, &recordsNumber);
+
+	createIndex (data, schema, recordsNumber);
 
 	freeSchema (schema);
+	free (data);
 	free (schemaName);
 
 	return 0;
@@ -181,6 +211,18 @@ SCHEMA * getSchema (const char * schemaName) {
 	return schema;
 }
 
+void dumpSchema (SCHEMA * schema) {
+	int i;
+
+	printf ("table %s(%d bytes)\n", schema->table, schema->size);
+
+	for (i = 0; i < schema->fieldsNumber; i++) {
+		printf ("%s %s", schema->fields[i].name, schema->fields[i].type);
+		if (schema->fields[i].order == 1) printf (" order");
+		printf ("(%d bytes)\n", schema->fields[i].size);
+	}
+}
+
 void freeSchema (SCHEMA * schema) {
 	int i;
 
@@ -195,7 +237,7 @@ void freeSchema (SCHEMA * schema) {
 
 void * readData (SCHEMA * schema, int * recordsNumber) {
 	void * data = NULL;
-	FILE * pdata = NULL;
+	FILE * p_data = NULL;
 	char * filename = NULL;
 
 	filename = (char *) malloc ((strlen(schema->table) + strlen(".data") + 1) * sizeof (char));
@@ -203,12 +245,128 @@ void * readData (SCHEMA * schema, int * recordsNumber) {
 	strcpy (filename + strlen (schema->table), ".data");
 	filename[(int) strlen (schema->table) + strlen (".data")] = '\0';
 
-	printf ("%s\n", filename);
+	p_data = fopen (filename, "r");
 
-	pdata = fopen (filename, "r");
+	fseek (p_data, 0, SEEK_END);
+	*recordsNumber = (ftell (p_data) / schema->size);
+	fseek (p_data, 0, SEEK_SET);
+
+	data = malloc (*recordsNumber * schema->size);
+	fread (data, schema->size, *recordsNumber, p_data);
 
 	free (filename);
-	fclose (pdata);
+	fclose (p_data);
 
 	return data;
+}
+
+void fprintInt (void * data, int offset, FILE * output) {
+	char * transition;
+	int * number;
+
+	transition = (char *) data;
+	transition += offset;
+
+	number = (int *)transition;
+
+	fprintf (output, "%d", *number);
+}
+
+void fprintDouble (void * data, int offset, FILE * output) {
+	char * transition;
+	double * number;
+
+	transition = (char *) data;
+	transition += offset;
+
+	number = (double *) transition;
+
+	fprintf (output, "%lf", *number);
+}
+
+void fprintString (void * data, int offset, FILE * output) {
+	char * string;
+
+	string = (char *) data;
+	string += offset;
+
+	fprintf (output, "%s", string);
+}
+
+void fwriteInt (void * data, int offset, FILE * output) {
+	char * transition;
+
+	transition = (char *) data;
+	transition += offset;
+
+	fwrite ((void *) transition, sizeof(int), 1, output);
+}
+
+void fwriteDouble (void * data, int offset, FILE * output) {
+	char * transition;
+
+	transition = (char *) data;
+	transition += offset;
+
+	fwrite ((void *) transition, sizeof(double), 1, output);
+}
+
+void fwriteString (void * data, int offset, FILE * output, int size) {
+	char * transition;
+
+	transition = (char *) data;
+	transition += offset;
+
+	fwrite ((void *) transition, size, 1, output);
+}
+
+int getInternOffset (SCHEMA * schema, int position) {
+	int offset, i;
+
+	for (offset = 0, i =0; i < position; i++) {
+		 offset += schema->fields[i].size;
+	}
+
+	return offset;
+}
+
+/* TODO criar uma função para criar o nome. */
+void createIndex (void * data, SCHEMA * schema, int recordsNumber) {
+	int i, j, internOffset;
+	int tableNameSize, fieldNameSize, extensionSize;
+	char * filename;
+	FILE * idx;
+
+	for (i = 0; i < schema->fieldsNumber; i++) {
+		internOffset = getInternOffset (schema, i);
+		printf ("%s intern offset = %d\n", schema->fields[i].name, internOffset);
+
+		if (schema->fields[i].order) {
+			tableNameSize = strlen (schema->table);
+			fieldNameSize = strlen (schema->fields[i].name);
+			extensionSize = strlen (".idx");
+
+			filename = (char *) malloc ((tableNameSize + 1 + fieldNameSize + extensionSize + 1) * sizeof (char));
+			strcpy (filename, schema->table);
+			strcat (filename, "-");
+			strcat (filename, schema->fields[i].name);
+			strcat (filename, ".idx");
+
+			idx = fopen (filename, "w+");
+			internOffset = getInternOffset (schema, i);
+
+			for (j = 0; j < recordsNumber * schema->size; j += schema->size) {
+				fwrite ((void *) &j, sizeof (int), 1, idx);
+				if (strcmp (schema->fields[i].type, "int") == 0) 
+					fwriteInt (data, j + internOffset, idx);
+				else if (strcmp (schema->fields[i].type, "double") == 0)
+					fwriteDouble (data, j + internOffset, idx);
+				else 
+					fwriteString (data, j + internOffset, idx, schema->fields[i].size);
+			}
+
+			free (filename);
+			fclose (idx);
+		}
+	}
 }
