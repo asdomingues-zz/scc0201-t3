@@ -17,7 +17,8 @@ generate:
 	cp ./cases/iris.schema ./iris.schema
 
 destroy:
-	find -name "iris*" -exec rm {} \;
+	rm ./iris.data
+	rm ./iris.schema
 
 clean:	destroy
 	find -name "*~" -exec rm -rf {} \;

@@ -208,6 +208,7 @@ void * readData (SCHEMA * schema, int * recordsNumber) {
 	pdata = fopen (filename, "r");
 
 	free (filename);
+	fclose (pdata);
 
 	return data;
 }
