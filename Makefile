@@ -9,9 +9,9 @@ CASE=< teste.txt
 
 all: test
 
-done: clean compile run
+done: destroy clean generate compile run
 
-test: clean compile-test run-test
+test: destroy clean generate compile-test run-test
 
 generate:
 	cp ./cases/iris.data ./iris.data
@@ -20,22 +20,22 @@ generate:
 destroy:
 	rm ./iris.data
 	rm ./iris.schema
-	rm ./iris-id.idx
+	find -name "*idx" -exec rm -rf {} \;
 
-clean:	destroy
+clean:
 	find -name "*~" -exec rm -rf {} \;
 	rm -rf $(BUILD)
 
-compile-test: generate
+compile-test:
 	mkdir $(BUILD)
 	$(COMPILER) $(SOURCE) -I $(INCLUDES) -o $(BUILD)$(OUTPUT) $(WARNING)
 
 run-test:
 	$(VALGRIND) $(BUILD)$(OUTPUT) $(CASE)
 
-compile: generate
+compile:
 	mkdir $(BUILD)
 	$(COMPILER) $(SOURCE) -I $(INCLUDES) -o $(BUILD)$(OUTPUT)
 
 run:
-	$(BUILD)$(OUTPUT) $(CASE)
+	$(BUILD)$(OUTPUT)

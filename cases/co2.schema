@@ -1,0 +1,7 @@
+table co2
+id int order
+plant char[5]
+type char[15]
+treatment char[30]
+conc int
+uptake double

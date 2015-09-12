@@ -1,2 +1,6 @@
 iris.schema
+dump_schema
+dump_data
+dump_index
+exit
 
