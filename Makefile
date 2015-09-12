@@ -11,6 +11,8 @@ all: test
 
 done: destroy clean generate compile run
 
+time: destroy clean generate compile time-run
+
 test: destroy clean generate compile-test run-test
 
 generate:
@@ -39,3 +41,6 @@ compile:
 
 run:
 	$(BUILD)$(OUTPUT)
+
+time-run:
+	time $(BUILD)$(OUTPUT) $(CASE)

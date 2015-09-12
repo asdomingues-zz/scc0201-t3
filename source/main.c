@@ -32,11 +32,12 @@ typedef struct Schema SCHEMA;
  *	Função para ler um string até determinado caractere.
  *	- Parâmetros:
  *		FILE *: arquivo do qual a string deve ser lida;
- *		const char: caractere terminador.
+ *		const char: caractere terminador;
+ *		int: tamanho do buffer a ser utilizado.
  *	- Retorno:
  *		char *: cadeia de caracteres lida.
  */
-char * readUntilChar (FILE *, const char);
+char * readUntilChar (FILE *, const char, int);
 
 /*	getSchema ()
  *
@@ -214,7 +215,7 @@ void fprint (const char *, void *, int, FILE *);
  *
  *	Função para imprimir o conteúdo do arquivo .data com as etiquetas do arquivo .schema.
  *	- Parâmetros:
- *		SCHEMA *: endereço da estrutura com as cacracterísticas descritas pelo .schema;
+ *		SCHEMA *: endereço da estrutura com as características descritas pelo .schema;
  *		int: quantidade de registros contida no .data.
  *	- Retorno:
  *		não há.
@@ -225,12 +226,114 @@ void dumpData (SCHEMA *, int);
  *
  *	Função para imprimir o conteúdo do arquivo .idx com as etiquetas do arquivo .schema.
  *	- Parâmetros:
- *		SCHEMA *: endereço da estrutura com as cacracterísticas descritas pelo .schema;
+ *		SCHEMA *: endereço da estrutura com as características descritas pelo .schema;
  *		int: quantidade de registros contida no .data.
  *	- Retorno:
  *		não há.
  */
 void dumpIndex (SCHEMA *, int);
+
+/*	compareInt ()
+ *
+ *	Função para comparar dois inteiros em um mesmo bloco de memória.
+ *	- Parâmetros:
+ *		void *: ponteiro para o bloco que contém os dois inteiros;
+ *		int: deslocamento até o primeiro inteiro desde o início do bloco;
+ *		int: deslocamento até o segundo inteiro desde o início do bloco;
+ *		int: tamanho de cada deslocamento.
+ *	- Retorno:
+ *		int: diferença entre os inteiros.
+ */
+int compareInt (void *, int, int, int);
+
+/*	compareInt ()
+ *
+ *	Função para trocar de lugar dois inteiros em um mesmo bloco de memória.
+ *	- Parâmetros:
+ *		void *: ponteiro para o bloco que contém os dois inteiros;
+ *		int: deslocamento até o primeiro inteiro desde o início do bloco;
+ *		int: deslocamento até o segundo inteiro desde o início do bloco;
+ *		int: tamanho de cada deslocamento.
+ *	- Retorno:
+ *		não há.
+ */
+void swapInt (void *, int, int, int);
+
+/*	compareDouble ()
+ *
+ *	Função para comparar dois doubles em um mesmo bloco de memória.
+ *	- Parâmetros:
+ *		void *: ponteiro para o bloco que contém os dois doubles;
+ *		int: deslocamento até o primeiro double desde o início do bloco;
+ *		int: deslocamento até o segundo double desde o início do bloco;
+ *		int: tamanho de cada deslocamento.
+ *	- Retorno:
+ *		int: sinal da diferença entre os doubles (-1, 1).
+ */
+int compareDouble (void *, int, int, int);
+
+/*	compareDouble ()
+ *
+ *	Função para trocar de lugar dois doubles em um mesmo bloco de memória.
+ *	- Parâmetros:
+ *		void *: ponteiro para o bloco que contém os dois doubles;
+ *		int: deslocamento até o primeiro double desde o início do bloco;
+ *		int: deslocamento até o segundo double desde o início do bloco;
+ *		int: tamanho de cada deslocamento.
+ *	- Retorno:
+ *		não há.
+ */
+void swapDouble (void *, int, int, int);
+
+/*	compareString ()
+ *
+ *	Função para comparar duas strings em um mesmo bloco de memória.
+ *	- Parâmetros:
+ *		void *: ponteiro para o bloco que contém as duas strings;
+ *		int: deslocamento até a primeira string desde o início do bloco;
+ *		int: deslocamento até a segunda string desde o início do bloco;
+ *		int: tamanho de cada deslocamento.
+ *	- Retorno:
+ *		int:	> 0 se a segunda string vier antes da primeira em ordem alfabética;
+ *			< 0 se a segunda string vier depois da primeira em ordem alfabética;
+ *			= 0 se as strings são iguais.
+ */
+int compareString (void *, int, int, int);
+
+/*	compareString ()
+ *
+ *	Função para trocar de lugar duas strings em um mesmo bloco de memória.
+ *	- Parâmetros:
+ *		void *: ponteiro para o bloco que contém as duas strings;
+ *		int: deslocamento até a primeira string desde o início do bloco;
+ *		int: deslocamento até a segunda string desde o início do bloco;
+ *		int: tamanho de cada deslocamento.
+ *	- Retorno:
+ *		não há.
+ */
+void swapString (void *, int, int, int);
+
+/*	orderIndex ()
+ *
+ *	Função para ordenar os índices de um .data.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura com as características descritas pelo .schema;
+ *		int: quantidade de dados gravados no índice.
+ *	- Retorno:
+ *		não há.
+ */
+void orderIndex (SCHEMA *, int);
+
+/*	insertData ()
+ *
+ *	Função para inserir registros no final de um arquivo .data.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura com as características descritas pelo .schema;
+ *		int *: endereço da variável que guarda a quantidade de registros do .data.
+ *	- Retorno:
+ *		não há.
+ */
+void insertData (SCHEMA *, int *);
 
 int main (int argc, char * argv[]) {
 	char * schemaName;
@@ -238,18 +341,22 @@ int main (int argc, char * argv[]) {
 	SCHEMA * schema;
 	void * data;
 	int recordsNumber;
+	int recordsIndexed;
 
-	schemaName = readUntilChar (stdin, '\n');
+	schemaName = readUntilChar (stdin, '\n', BUFFER_SIZE);
 	schema = getSchema (schemaName);
 
 	data = readData (schema, &recordsNumber);
-	createIndex (data, schema, recordsNumber);
+	recordsIndexed = recordsNumber;
+	createIndex (data, schema, recordsIndexed);
+	orderIndex (schema, recordsIndexed);
 	free (data);
 
-	while (strcmp (instruction = readUntilChar (stdin, '\n'), "exit") != 0) {
+	while (strcmp (instruction = readUntilChar (stdin, '\n', BUFFER_SIZE), "exit") != 0) {
 		if (!strcmp (instruction, "dump_schema")) dumpSchema (schema);
 		else if (!strcmp (instruction, "dump_data")) dumpData (schema, recordsNumber);
-		else if (!strcmp (instruction, "dump_index")) dumpIndex (schema, recordsNumber);
+		else if (!strcmp (instruction, "dump_index")) dumpIndex (schema, recordsIndexed);
+		else if (!strcmp (instruction, "insert")) insertData (schema, &recordsNumber);
 		free (instruction);
 	}
 	free (instruction);
@@ -275,14 +382,14 @@ typedef struct Schema {
 	FIELD * fields;
 } SCHEMA;
 
-char * readUntilChar (FILE * p_file, const char delimiter) {
+char * readUntilChar (FILE * p_file, const char delimiter, int bufferSize) {
 	char read;
 	char * string = NULL;
 	int i;
 
 	for (i = 0; !feof (p_file) && (read = fgetc (p_file)) != delimiter; i++) {
 		if (i % BUFFER_SIZE == 0)
-			string = (char *) realloc (string, (i + BUFFER_SIZE) * sizeof (char));
+			string = (char *) realloc (string, (i + bufferSize) * sizeof (char));
 
 		string[i] = read;
 	}
@@ -511,7 +618,7 @@ FILE * openIndexFile (SCHEMA * schema, const char * mode, int fieldPosition) {
 	return p_index;
 }
 
-void createIndex (void * data, SCHEMA * schema, int recordsNumber) {
+void createIndex (void * data, SCHEMA * schema, int recordsIndexed) {
 	int i, j, internOffset;
 	FILE * idx;
 
@@ -520,7 +627,7 @@ void createIndex (void * data, SCHEMA * schema, int recordsNumber) {
 			idx = openIndexFile (schema, "w+", i);
 			internOffset = getInternOffset (schema, i);
 
-			for (j = 0; j < recordsNumber * schema->size; j += schema->size) {
+			for (j = 0; j < recordsIndexed * schema->size; j += schema->size) {
 				if (strcmp (schema->fields[i].type, "int") == 0) 
 					fwriteInt (data, j + internOffset, idx);
 				else if (strcmp (schema->fields[i].type, "double") == 0)
@@ -569,7 +676,7 @@ void dumpData (SCHEMA * schema, int recordsNumber) {
 	fclose (p_data);
 }
 
-void dumpIndex (SCHEMA * schema, int recordsNumber) {
+void dumpIndex (SCHEMA * schema, int recordsIndexed) {
 	int i, j;
 	void * index;
 	FILE * p_index;
@@ -579,7 +686,7 @@ void dumpIndex (SCHEMA * schema, int recordsNumber) {
 			p_index = openIndexFile (schema, "r", i);
 			index = malloc (schema->fields[i].size + sizeof (int));
 
-			for (j = 0; j < recordsNumber; j++) {
+			for (j = 0; j < recordsIndexed; j++) {
 				fread (index, schema->fields[i].size + sizeof (int), 1, p_index);
 				fprint (schema->fields[i].type, index, 0, stdout);
 
@@ -593,4 +700,187 @@ void dumpIndex (SCHEMA * schema, int recordsNumber) {
 			fclose (p_index);
 		}
 	}
+}
+
+void * readIndex (SCHEMA * schema, int recordsIndexed, int fieldPosition) {
+	void * index = NULL;
+	FILE * p_index = NULL;
+
+	index = malloc ((schema->fields[fieldPosition].size + sizeof (int)) * recordsIndexed);
+	p_index =  openIndexFile (schema, "r", fieldPosition);
+
+	fread (index, schema->fields[fieldPosition].size + sizeof (int), recordsIndexed, p_index);
+
+	fclose (p_index);
+
+	return index;
+}
+
+int compareInt (void * index, int offset1, int offset2, int size) {
+	char * transition = index;
+	int * number1, * number2;
+
+	size += sizeof (int);
+
+	number1 = (int *) (transition + offset1 * (size));
+	number2 = (int *) (transition + offset2 * (size));
+
+	return *number2 - *number1;
+}
+
+void swapInt (void * index, int offset1, int offset2, int size) {
+	char * transition = index;
+	int * number1, * number2;
+	void * numberAux;
+
+	size += sizeof (int);
+
+	numberAux = malloc (size);
+
+	number1 = (int *) (transition + offset1 * (size));
+	number2 = (int *) (transition + offset2 * (size));
+
+	memcpy (numberAux, (void *) number2, size);
+	memcpy ((void *) number2, (void *) number1, size);
+	memcpy ((void *) number1, numberAux, size);
+
+	free (numberAux);
+}
+
+int compareDouble (void * index, int offset1, int offset2, int size) {
+	char * transition = index;
+	double * number1, * number2;
+
+	size += sizeof (int);
+
+	number1 = (double *) (transition + offset1 * (size));
+	number2 = (double *) (transition + offset2 * (size));
+
+	return *number2 - *number1 < 0.0? -1 : 1;
+}
+
+void swapDouble (void * index, int offset1, int offset2, int size) {
+	char * transition = index;
+	double * number1, * number2;
+	void * numberAux;
+
+	size += sizeof (int);
+
+	numberAux = malloc (size);
+
+	number1 = (double *) (transition + offset1 * (size));
+	number2 = (double *) (transition + offset2 * (size));
+
+	memcpy (numberAux, (void *) number2, size);
+	memcpy ((void *) number2, (void *) number1, size);
+	memcpy ((void *) number1, numberAux, size);
+
+	free (numberAux);
+}
+
+int compareString (void * index, int offset1, int offset2, int size) {
+	char * transition = index;
+	char * string1, * string2;
+
+	size += sizeof (int);
+
+	string1 = (char *) (transition + offset1 * (size));
+	string2 = (char *) (transition + offset2 * (size));
+
+	return strcmp (string2, string1);
+}
+
+void swapString (void * index, int offset1, int offset2, int size) {
+	char * transition = index;
+	char * string1, * string2;
+	void * stringAux;
+
+	size += sizeof (int);
+
+	stringAux = malloc (size);
+
+	string1 = (char *) (transition + offset1 * (size));
+	string2 = (char *) (transition + offset2 * (size));
+
+	memcpy (stringAux, (void *) string2, size);
+	memcpy ((void *) string2, (void *) string1, size);
+	memcpy ((void *) string1, stringAux, size);
+
+	free (stringAux);
+}
+
+void orderIndex (SCHEMA * schema, int recordsIndexed) {
+	void * index = NULL;
+	int i, j, k;
+	FILE * p_index = NULL;
+	int (*compare) (void * index, int offset1, int offset2, int size);
+	void (*swap) (void * index, int offset1, int offset2, int size);
+
+	for (i = 0; i < schema->fieldsNumber; i++) {
+		if (schema->fields[i].order) {
+			index = readIndex (schema, recordsIndexed, i);
+
+			if (!strcmp (schema->fields[i].type, "int")) {
+				compare = &compareInt;
+				swap = &swapInt;
+			}
+			else if (!strcmp (schema->fields[i].type, "double")) {
+				compare = &compareDouble;
+				swap = &swapDouble;
+			}
+			else {
+				compare = &compareString;
+				swap = &swapString;
+			}
+
+			for (j = 1; j < recordsIndexed; j++)
+				for (k = 0; k < recordsIndexed - j; k++)
+					if (compare (index, k, k + 1, schema->fields[i].size) < 0) {
+						swap (index, k, (k + 1), schema->fields[i].size);
+					}
+
+			p_index = openIndexFile (schema, "w", i);
+			fwrite (index, (schema->fields[i].size + sizeof (int)), recordsIndexed, p_index);
+
+			fclose (p_index);
+			free (index);
+		}
+	}
+}
+
+void insertData (SCHEMA * schema, int * recordsNumber) {
+	FILE * p_data;
+	void * data;
+	int i, newInt;
+	double newDouble;
+	char * newString, *auxString;
+
+	p_data = openDataFile (schema, "a");
+	*recordsNumber += 1;
+
+	for (i = 0; i < schema->fieldsNumber; i++) {
+		newString = NULL;
+
+		if (!strcmp (schema->fields[i].type, "int")) {
+			scanf ("%d", &newInt);
+			data = (void *) &newInt;
+		}
+		else if (!strcmp (schema->fields[i].type, "double")) {
+			scanf ("%lf", &newDouble);
+			data = (void *) &newDouble;
+		}
+		else {
+			fgetc (stdin);
+			auxString = readUntilChar (stdin, '\n', schema->fields[i].size);
+			newString = (char *) calloc (schema->fields[i].size, sizeof (char));
+			strcpy (newString, auxString);
+			free (auxString);
+			data = (void *) newString;
+		}
+
+		fwrite (data, schema->fields[i].size, 1, p_data);
+		free (newString);
+	}
+
+	fclose (p_data);
 }

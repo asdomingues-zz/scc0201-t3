@@ -19,3 +19,9 @@ ASD | 11/09/15 | 18:51
 --Documentadas todas as novas funções.
 ASD | 12/09/15 | 02:19
 ---------------------------------------------------------------------------------------------------------
+--Criadas funções para comparar e trocar os campos nos índices.
+--Criada a função para ordenar os índices.
+--Criada a função para adicionar (append) um novo registro (com os campos do .schema) ao .data.
+--Documentadas todas as novas funções.
+ASD | 12/09/15 | 19:29
+---------------------------------------------------------------------------------------------------------

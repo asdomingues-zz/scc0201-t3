@@ -2,5 +2,13 @@ iris.schema
 dump_schema
 dump_data
 dump_index
+insert
+43
+6.5
+3.0
+5.2
+2.0
+virginica
+dump_data
 exit
 
