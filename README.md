@@ -25,3 +25,8 @@ ASD | 12/09/15 | 02:19
 --Documentadas todas as novas funções.
 ASD | 12/09/15 | 19:29
 ---------------------------------------------------------------------------------------------------------
+--Criada funções para o comando select (busca em campos índice).
+--Criada função para selecionar qual busca binária fazer e busca binária para inteiros.
+--Documentadas todas as novas funções.
+ASD | 13/09/15 | 13:13
+---------------------------------------------------------------------------------------------------------

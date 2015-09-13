@@ -335,6 +335,60 @@ void orderIndex (SCHEMA *, int);
  */
 void insertData (SCHEMA *, int *);
 
+/*	binaryInt ()
+ *
+ *	Função para buscar por um inteiro em um arquivo .idx para esse tipo de campo.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura que descreve o arquivo .data conforme o arquivo .schema;
+ *		int: início bloco em que a busca no arquivo deve ser realizada;
+ *		int: início do último item no bloco em que a busca no arquivo deve ser realizada;
+ *		int: quantidade de dados indexados;
+ *		int *: endereço na memória da chave pela qual a busca procura;
+ *		int *: endereço da variável que guarda quantos passos foram necessários na busca.
+ *	- Retorno:
+ *		int: deslocamento do dado procurado no arquivo .data se ele estiver indexado ou -1
+ *			se o dado não for encontrado no índice.
+ */
+int binaryInt (SCHEMA *, int, int, int, int *, int *);
+
+/*	binarySearch ()
+ *
+ *	Função que seleciona qual busca binária deve ser feita por uma chave em determinado índice.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura que descreve o arquivo .data conforme o arquivo .schema;
+ *		int: posição do campo no vetor de campos da estrutura com a descrição do .schema;
+ *		int: quantidade de dados indexados;
+ *		int *: endereço na memória da chave pela qual a busca procura;
+ *		int *: endereço da variável que guarda quantos passos foram necessários na busca.
+ *	- Retorno:
+ *		int: deslocamento do dado procurado no arquivo .data se ele estiver indexado ou -1
+ *			se o dado não for encontrado no índice.
+ */
+int binarySearch (SCHEMA *, int, int, void *, int *);
+
+/*	getKey ()
+ *
+ *	Função para ler da entrada padrão uma chave a ser buscada, selecionando como a leitura deve ser feita para diferentes tipos.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura que descreve o arquivo .data conforme o arquivo .schema;
+ *		int: posição do campo no vetor de campos da estrutura com a descrição do .schema.
+ *	- Retorno:
+ *		void *: endereço da chave obtida na memória.
+ */
+void * getKey (SCHEMA *, int);
+
+/*	select ()
+ *
+ *	Função para buscar por uma chave, de um dos campos que possui .idx, no seu índice ou .data.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura que descreve o arquivo .data conforme o arquivo .schema;
+ *		int: quantidade de dados no .data;
+ *		int: quantidade de dados indexados.
+ *	- Retorno:
+ *		não há.
+ */
+void  select (SCHEMA *, int, int);
+
 int main (int argc, char * argv[]) {
 	char * schemaName;
 	char * instruction;
@@ -357,6 +411,7 @@ int main (int argc, char * argv[]) {
 		else if (!strcmp (instruction, "dump_data")) dumpData (schema, recordsNumber);
 		else if (!strcmp (instruction, "dump_index")) dumpIndex (schema, recordsIndexed);
 		else if (!strcmp (instruction, "insert")) insertData (schema, &recordsNumber);
+		else if (!strcmp (instruction, "select")) select (schema, recordsNumber, recordsIndexed);
 		free (instruction);
 	}
 	free (instruction);
@@ -884,3 +939,104 @@ void insertData (SCHEMA * schema, int * recordsNumber) {
 
 	fclose (p_data);
 }
+/* Era possível fazer a busca mais genérica, mas isso resultaria em muitos condicionais (lentidão). */
+int binaryInt (SCHEMA * schema, int position, int begin, int end, int * key, int * tries) {
+	int middle;
+	int * found = NULL;
+	FILE * p_index = NULL;
+
+	(*tries)++;
+
+	if (begin > end) return -1;
+
+	middle = (begin + end) / 2;
+	found = malloc (schema->fields[position].size);
+	p_index = openIndexFile (schema, "r", position);
+	fseek (p_index, middle * (schema->fields[position].size + sizeof (int)), SEEK_SET);
+	fread ((void *) found, schema->fields[position].size, 1, p_index);
+
+	if (*found == *key) {
+		fread (found, schema->fields[position].size, 1, p_index);
+		middle = *found;/* para economizar variáveis a middle guarda o deslocamento. */
+		free (found);
+		fclose (p_index);
+		return middle;
+	}
+	else if (*found > *key) {
+		free (found);
+		fclose (p_index);
+		return binaryInt (schema, position, begin, middle - 1, key, tries);
+	}
+	else {
+		free (found);
+		fclose (p_index);
+		return binaryInt (schema, position, middle + 1, end, key, tries);
+	}
+}
+
+int binarySearch (SCHEMA * schema, int position, int recordsIndexed, void * key, int * tries) {
+	if (!strcmp (schema->fields[position].type, "int")) {
+		return binaryInt (schema, position, 0, recordsIndexed - 1, (int *) key, tries);
+	}/*
+	else if (!strcmp (schema->fields[position].type, "double")) {
+		return binaryDouble (schema, position, 0, recordsIndexed - 1, (double *) key, tries);
+	}
+	else {
+		return binaryString (schema, position, 0, recordsIndexed - 1, (char *) key, tries);
+	}*/
+}
+
+void * getKey (SCHEMA * schema, int i) {
+	void * key;
+	char * auxString;
+
+	key = calloc (schema->fields[i].size, sizeof (char));
+	if (!strcmp (schema->fields[i].type, "int")) {
+		scanf ("%d", (int *) key);
+	}
+	else if (!strcmp (schema->fields[i].type, "double")) {
+		scanf ("%lf", (double *) key);
+	}
+	else {
+		auxString = readUntilChar (stdin, '\n', schema->fields[i].size);
+		strcpy ((char *) key, auxString);
+		free (auxString);
+	}
+
+	return key;
+}
+
+void select (SCHEMA * schema, int recordsNumber, int recordsIndexed) {
+	int i, found, tries = 0;
+	char * field, * interest;
+	void * key = NULL;
+
+	field = readUntilChar (stdin, '\n', BUFFER_SIZE);
+	for (i = 0; strcmp (field, schema->fields[i].name) != 0; i++);
+
+	key = getKey (schema, i);
+	interest = readUntilChar (stdin, '\n', BUFFER_SIZE);
+
+	if (!strcmp (schema->fields[i].name, field) && schema->fields[i].order) {
+		found = binarySearch (schema, i, recordsIndexed, key, &tries);
+
+		if (found < 0 && recordsNumber > recordsIndexed) {/*
+			found = sequentialSearch (schema, i, recordsIndexed, recordsNumber, key, &tries);
+*/
+			printf ("\nOI\n");
+			if (found < 0) printf ("value not found\n");
+		}
+		else printf ("found: %d\n", found);
+	}
+	else printf ("index not found\n");
+
+	free (interest);
+	free (key);
+	free (field);
+}
+
+/*	TODO: gravar no index um dado por vez;
+ *	TODO: utilizar ponteiro de função na createIndex e outras para reduzir o número de condições;
+ *	TODO: trocar o bubble sort pelo merge sort;
+ *	TODO: generalizar a função de busca binária.
+ */

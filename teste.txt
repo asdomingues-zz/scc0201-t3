@@ -10,5 +10,9 @@ insert
 2.0
 virginica
 dump_data
+select
+id
+43
+petal_length
 exit
 
