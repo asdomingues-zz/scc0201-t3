@@ -1,5 +1,4 @@
-# scc0201-t3
-Trabalho 3 - Base de dados
+# Trabalho 3 - Base de dados
 
 Programa capaz de gerenciar arquivos de dados como um banco de dados com inserção, busca e ordenação.
 Além disso, inclui módulos para gerenciar índices para acelerar a busca e ordenação. 
@@ -40,4 +39,9 @@ ASD | 19/09/15 | 00:26
 --Adicionada uma função para obter a quantidade de arquivos do .data.
 ASD | 19/09/15 | 10:04
 ---------------------------------------------------------------------------------------------------------
-
+--Generalizadas as funções de busca e ordenação utilizando as funções de comparação.
+--Modificadas as funções de comparação para ficarem mais simples.
+--Redocumentadas as funções alteradas.
+--Melhorias quanto a legibilidade do código.
+ASD | 19/09/15 | 18:25
+---------------------------------------------------------------------------------------------------------

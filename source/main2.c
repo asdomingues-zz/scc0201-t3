@@ -1,9 +1,16 @@
+/*	BASE DE DADOS
+ *
+ *	Programa com serialização e parsing para trabalhar com um banco de dados
+ *	operado conforme o modelo descrito no PDF do trabalho.
+ *
+ *	Allan Silva Domingues | 9293290	| 19/09/15 | ICMC-USP
+ */
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 #define	DELIMITER " \n\t[]"
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 128
 
 /*	Field FIELD
  *
@@ -137,6 +144,19 @@ void fprintDouble (void *, int, FILE *);
  */
 void fprintString (void *, int, FILE *);
 
+/*	fprint ()
+ *
+ *	Função criada para generalizar o uso das funções fprintDouble (), fprintInt () e fprintString ().
+ *	- Parâmetros:
+ *		const char *: string que contém o tipo do conteúdo a ser impresso;
+ *		void *: bloco que contám o que deve ser impresso;
+ *		int: deslocamento do início do bloco ao que deve ser impresso;
+ *		FILE *: arquivo para o qual o conteúdo desejado deve ser impresso.
+ *	- Retorno:
+ *		não há.
+ */
+void fprint (const char *, void *, int, FILE *); 
+
 /*	getInternOffset ()
  *
  *	Função para quantificar o deslocamento até um membro do registro descrito pelo .schema.
@@ -171,19 +191,6 @@ FILE * openIndexFile (SCHEMA *, const char *, int);
  */
 void createIndex (SCHEMA *, int);
 
-/*	fprint ()
- *
- *	Função criada para generalizar o uso das funções fprintDouble (), fprintInt () e fprintString ().
- *	- Parâmetros:
- *		const char *: string que contém o tipo do conteúdo a ser impresso;
- *		void *: bloco que contám o que deve ser impresso;
- *		int: deslocamento do início do bloco ao que deve ser impresso;
- *		FILE *: arquivo para o qual o conteúdo desejado deve ser impresso.
- *	- Retorno:
- *		não há.
- */
-void fprint (const char *, void *, int, FILE *); 
-
 /*	dumpData ()
  *
  *	Função para imprimir o conteúdo do arquivo .data com as etiquetas do arquivo .schema.
@@ -208,83 +215,49 @@ void dumpIndex (SCHEMA *, int);
 
 /*	compareInt ()
  *
- *	Função para comparar dois inteiros em um mesmo bloco de memória.
+ *	Função para comparar dois inteiros na memória.
  *	- Parâmetros:
- *		void *: ponteiro para o bloco que contém os dois inteiros;
- *		int: deslocamento até o primeiro inteiro desde o início do bloco;
- *		int: deslocamento até o segundo inteiro desde o início do bloco;
- *		int: tamanho de cada deslocamento.
+ *		void *: ponteiro para o bloco que contém o primeiro inteiro;
+ *		void *: ponteiro para o bloco que contém o segundo inteiro.
  *	- Retorno:
  *		int: diferença entre os inteiros.
  */
-int compareInt (void *, int, int, int);
-
-/*	compareInt ()
- *
- *	Função para trocar de lugar dois inteiros em um mesmo bloco de memória.
- *	- Parâmetros:
- *		void *: ponteiro para o bloco que contém os dois inteiros;
- *		int: deslocamento até o primeiro inteiro desde o início do bloco;
- *		int: deslocamento até o segundo inteiro desde o início do bloco;
- *		int: tamanho de cada deslocamento.
- *	- Retorno:
- *		não há.
- */
-void swapInt (void *, int, int, int);
+int compareInt (void *, void *);
 
 /*	compareDouble ()
  *
- *	Função para comparar dois doubles em um mesmo bloco de memória.
+ *	Função para comparar dois doubles na memória.
  *	- Parâmetros:
- *		void *: ponteiro para o bloco que contém os dois doubles;
- *		int: deslocamento até o primeiro double desde o início do bloco;
- *		int: deslocamento até o segundo double desde o início do bloco;
- *		int: tamanho de cada deslocamento.
+ *		void *: ponteiro para o bloco que contém o primeiro doubles;
+ *		void *: ponteiro para o bloco que contém o segundo doubles.
  *	- Retorno:
- *		int: sinal da diferença entre os doubles (-1, 1).
+ *		int: sinal da diferença entre os doubles (-1, 1) ou 0.
  */
-int compareDouble (void *, int, int, int);
-
-/*	compareDouble ()
- *
- *	Função para trocar de lugar dois doubles em um mesmo bloco de memória.
- *	- Parâmetros:
- *		void *: ponteiro para o bloco que contém os dois doubles;
- *		int: deslocamento até o primeiro double desde o início do bloco;
- *		int: deslocamento até o segundo double desde o início do bloco;
- *		int: tamanho de cada deslocamento.
- *	- Retorno:
- *		não há.
- */
-void swapDouble (void *, int, int, int);
+int compareDouble (void *, void *);
 
 /*	compareString ()
  *
- *	Função para comparar duas strings em um mesmo bloco de memória.
+ *	Função para comparar duas strings na memória.
  *	- Parâmetros:
- *		void *: ponteiro para o bloco que contém as duas strings;
- *		int: deslocamento até a primeira string desde o início do bloco;
- *		int: deslocamento até a segunda string desde o início do bloco;
- *		int: tamanho de cada deslocamento.
+ *		void *: ponteiro para o bloco que contém a primeira string;
+ *		void *: ponteiro para o bloco que contém a segunda string.
  *	- Retorno:
  *		int:	> 0 se a segunda string vier antes da primeira em ordem alfabética;
  *			< 0 se a segunda string vier depois da primeira em ordem alfabética;
  *			= 0 se as strings são iguais.
  */
-int compareString (void *, int, int, int);
+int compareString (void *, void *);
 
-/*	compareString ()
+/*	swapFields ()
  *
- *	Função para trocar de lugar duas strings em um mesmo bloco de memória.
+ *	Função para trocar de lugar o conteúdo de dois blocos da memória de mesmo tamanho.
  *	- Parâmetros:
- *		void *: ponteiro para o bloco que contém as duas strings;
- *		int: deslocamento até a primeira string desde o início do bloco;
- *		int: deslocamento até a segunda string desde o início do bloco;
- *		int: tamanho de cada deslocamento.
+ *		void *: ponteiro para o bloco que contém o primeiro bloco;
+ *		void *: ponteiro para o bloco que contém o segundo bloco.
  *	- Retorno:
  *		não há.
  */
-void swapString (void *, int, int, int);
+void swapFields (void *, void *, int);
 
 /*	orderIndex ()
  *
@@ -308,69 +281,20 @@ void orderIndex (SCHEMA *, int);
  */
 void insertData (SCHEMA *, int *);
 
-/*	sequentialInt ()
+/*	sequentialSearch ()
  *
- *	Função para buscar em um arquivo .data por uma chave inteira não indexada no arquivo .data.
+ *	Função para realizar a busca sequencial em um .data (apenas novos registros).
  *	- Parâmetros:
  *		SCHEMA *: endereço da estrutura com as características descritas pelo .schema;
- *		int: número do campo pelo qual a busca será realizada;
- *
+ *		int: posição do campo no vetor SCHEMA * que contém informações o dado a ser buscado;
+ *		int: posição inicial da busca;
+ *		int :posição final busca;
+ *		void *: chave que deve ser buscada;
+ *		int *: ponteiro para a variável que guarda a quantidade de passos na busca.
+ *	- Retorno:
+ *		int: deslocamento do registro com a chave se ela for encontrada ou -1.
  */
-int sequentialInt (SCHEMA *, int, int, int, int *, int *);
-
-int sequentialDouble (SCHEMA *, int, int, int, double *, int *);
-
-int sequentialString (SCHEMA *, int, int, int, char *, int *);
-
 int sequentialSearch (SCHEMA *, int, int, int, void *, int *);
-
-/*	binaryInt ()
- *
- *	Função para buscar por um inteiro em um arquivo .idx para esse tipo de campo.
- *	- Parâmetros:
- *		SCHEMA *: endereço da estrutura que descreve o arquivo .data conforme o arquivo .schema;
- *		int: início do bloco em que a busca no arquivo deve ser realizada;
- *		int: início do último item no bloco em que a busca no arquivo deve ser realizada;
- *		int: quantidade de dados indexados;
- *		int *: endereço na memória da chave pela qual a busca procura;
- *		int *: endereço da variável que guarda quantos passos foram necessários na busca.
- *	- Retorno:
- *		int: deslocamento do dado procurado no arquivo .data se ele estiver indexado ou -1
- *			se o dado não for encontrado no índice.
- */
-int binaryInt (SCHEMA *, int, int, int, int *, int *);
-
-/*	binaryDouble ()
- *
- *	Função para realizar a busca binária em um arquivo .idx de um campo double.
- *	- Parâmetros:
- *		SCHEMA *: endereço da estrutura que descreve o .data conforme o .schema;
- *		int: início do bloco em que a busca no arquivo deve ser realizada;
- *		int: fim do bloco em que a busca do arquivo deve ser realizada;
- *		int: quantidade de dados indexados;
- *		double *: endereço da chave pela qual a busca deve ser feita;
- *		int *: variável que conta quantos passos foram necessários na busca.
- *	- Retorno:
- *		int: deslocamento do dado procurado no arquivo .data se ele estiver indexado
- *			ou -1 se ele não estiver no índice.
- */
-int binaryDouble (SCHEMA *, int, int, int, double *, int *);
-
-/*	binaryString ()
- *
- *	Função para realizar a busca binária em um arquivo .idx de cadeias de caracteres.
- *	- Parâmetros:
- *		SCHEMA *: endereço da estrutura que descreve o .data conforme o .schema;
- *		int: início do bloco em que a busca no arquivo deve ser realizada;
- *		int: fim do bloco em que a busca do arquivo deve ser realizada;
- *		int: quantidade de dados indexados;
- *		char *: endereço da chave pela qual a busca deve ser feita;
- *		int *: variável que conta quantos passos foram necessários na busca.
- *	- Retorno:
- *		int: deslocamento do dado procurado no arquivo .data se ele estiver indexado
- *			ou -1 se ele não estiver no índice.
- */
-int binaryString (SCHEMA *, int, int, int, char *, int *);
 
 /*	binarySearch ()
  *
@@ -382,10 +306,9 @@ int binaryString (SCHEMA *, int, int, int, char *, int *);
  *		int *: endereço na memória da chave pela qual a busca procura;
  *		int *: endereço da variável que guarda quantos passos foram necessários na busca.
  *	- Retorno:
- *		int: deslocamento do dado procurado no arquivo .data se ele estiver indexado ou -1
- *			se o dado não for encontrado no índice.
+ *		int: deslocamento do registro com a chave se ela for encontrada no índice ou -1.
  */
-int binarySearch (SCHEMA *, int, int, void *, int *);
+int binarySearch (SCHEMA *, int, int, int, void *, int *);
 
 /*	getKey ()
  *
@@ -426,11 +349,21 @@ int main (int argc, char * argv[]) {
 	orderIndex (schema, recordsIndexed);
 
 	while (strcmp (instruction = readUntilChar (stdin, '\n', BUFFER_SIZE), "exit") != 0) {
-		if (!strcmp (instruction, "dump_schema")) dumpSchema (schema);
-		else if (!strcmp (instruction, "dump_data")) dumpData (schema, recordsNumber);
-		else if (!strcmp (instruction, "dump_index")) dumpIndex (schema, recordsIndexed);
-		else if (!strcmp (instruction, "insert")) insertData (schema, &recordsNumber);
-		else if (!strcmp (instruction, "select")) selectIt (schema, recordsNumber, recordsIndexed);
+		if (!strcmp (instruction, "dump_schema")) {
+			dumpSchema (schema);
+		}
+		else if (!strcmp (instruction, "dump_data")) {
+			dumpData (schema, recordsNumber);
+		}
+		else if (!strcmp (instruction, "dump_index")) {
+			dumpIndex (schema, recordsIndexed);
+		}
+		else if (!strcmp (instruction, "insert")) {
+			insertData (schema, &recordsNumber);
+		}
+		else if (!strcmp (instruction, "select")) {
+			selectIt (schema, recordsNumber, recordsIndexed);
+		}
 		else if (!strcmp (instruction, "update_index")) {
 			createIndex (schema, recordsNumber);
 			recordsIndexed = recordsNumber;
@@ -467,8 +400,9 @@ char * readUntilChar (FILE * p_file, const char delimiter, int bufferSize) {
 	int i;
 
 	for (i = 0; !feof (p_file) && (read = fgetc (p_file)) != delimiter; i++) {
-		if (i % BUFFER_SIZE == 0)
+		if (i % BUFFER_SIZE == 0) {
 			string = (char *) realloc (string, (i + bufferSize) * sizeof (char));
+		}
 
 		string[i] = read;
 	}
@@ -523,8 +457,12 @@ SCHEMA * getSchema (const char * schemaName) {
 			schema->fields[i].size = (int) strtol (token, NULL, 10);
 		}
 		else {
-			if (strcmp (schema->fields[i].type, "int") == 0) schema->fields[i].size = sizeof (int);
-			else schema->fields[i].size = sizeof (double);
+			if (strcmp (schema->fields[i].type, "int") == 0) {
+				schema->fields[i].size = sizeof (int);
+			}
+			else {
+				schema->fields[i].size = sizeof (double);
+			}
 		}
 		schema->size += schema->fields[i].size;
 
@@ -553,9 +491,11 @@ int getRecordsNumber (SCHEMA * schema) {
 
 	p_data = openDataFile (schema, "r");
 	fseek (p_data, 0, SEEK_END);
+
 	size = ftell (p_data);
-	fclose (p_data);
 	size /= schema->size;
+
+	fclose (p_data);
 
 	return size;
 }
@@ -567,8 +507,14 @@ void dumpSchema (SCHEMA * schema) {
 
 	for (i = 0; i < schema->fieldsNumber; i++) {
 		printf ("%s %s", schema->fields[i].name, schema->fields[i].type);
-		if (!strcmp (schema->fields[i].type, "char")) printf ("[%d]", schema->fields[i].size);
-		if (schema->fields[i].order == 1) printf (" order");
+
+		if (!strcmp (schema->fields[i].type, "char")) {
+			printf ("[%d]", schema->fields[i].size);
+		}
+		if (schema->fields[i].order == 1) {
+			printf (" order");
+		}
+
 		printf ("(%d bytes)\n", schema->fields[i].size);
 	}
 }
@@ -651,11 +597,24 @@ void fprintString (void * pointer, int offset, FILE * output) {
 	fprintf (output, "%s", string);
 }
 
+void fprint (const char * type, void * pointer, int offset, FILE * output) {
+	if (!strcmp (type, "int")) {
+		fprintInt (pointer, offset, output);
+	}
+	else if (!strcmp (type, "double")) {
+		fprintDouble (pointer, offset, output);
+	}
+	else {
+		fprintString (pointer, offset, output);
+	}
+} 
+
 int getInternOffset (SCHEMA * schema, int position) {
 	int offset, i;
 
-	for (offset = 0, i = 0; i < position; i++)
+	for (offset = 0, i = 0; i < position; i++) {
 		offset += schema->fields[i].size;
+	}
 
 	return offset;
 }
@@ -694,12 +653,15 @@ void createIndex (SCHEMA * schema, int recordsNumber) {
 	for (i = 0; i < schema->fieldsNumber; i++) {
 		if (schema->fields[i].order) {
 			p_index = openIndexFile (schema, "w+", i);
+
 			internOffset = getInternOffset (schema, i);
+
 			next = (char *) data;
 			next += internOffset;
 
 			for (j = 0; j < recordsNumber * schema->size; j += schema->size) {
 				fread (data, schema->size, 1, p_data);
+
 				fwrite ((void *) next, schema->fields[i].size, 1, p_index);
 				fwrite ((void *) &j, sizeof (int), 1, p_index);
 			}
@@ -712,16 +674,6 @@ void createIndex (SCHEMA * schema, int recordsNumber) {
 	fclose (p_data);
 	free (data);
 }
-
-void fprint (const char * type, void * pointer, int offset, FILE * output) {
-	if (!strcmp (type, "int"))
-		fprintInt (pointer, offset, stdout);
-	else if (!strcmp (type, "double"))
-		fprintDouble (pointer, offset, stdout);
-	else
-		fprintString (pointer, offset, stdout);
-
-} 
 
 void dumpData (SCHEMA * schema, int recordsNumber) {
 	void * data;
@@ -737,6 +689,7 @@ void dumpData (SCHEMA * schema, int recordsNumber) {
 
 		for (j = 0; j < schema->fieldsNumber; j++) {
 			offset = getInternOffset (schema, j);
+
 			printf ("%s = ", schema->fields[j].name);
 			fprint (schema->fields[j].type, data, offset, stdout);
 			printf ("\n");
@@ -751,19 +704,30 @@ void dumpIndex (SCHEMA * schema, int recordsIndexed) {
 	int i, j;
 	void * index;
 	FILE * p_index;
+	void (*printThis) (void *, int, FILE *);
 
 	for (i = 0; i < schema->fieldsNumber; i++) {
 		if (schema->fields[i].order) {
 			p_index = openIndexFile (schema, "r", i);
 			index = malloc (schema->fields[i].size + sizeof (int));
 
+			if (!strcmp (schema->fields[i].type, "int")) {
+				printThis = &fprintInt;
+			}
+			else if (!strcmp (schema->fields[i].type, "double")) {
+				printThis = &fprintDouble;
+			}
+			else {
+				printThis = &fprintString;
+			}
+
 			for (j = 0; j < recordsIndexed; j++) {
 				fread (index, schema->fields[i].size + sizeof (int), 1, p_index);
-				fprint (schema->fields[i].type, index, 0, stdout);
+				printThis (index, 0, stdout);
 
 				printf (" = ");
 
-				fprint ("int", index, schema->fields[i].size, stdout);
+				fprintInt (index, schema->fields[i].size, stdout);
 				printf("\n");
 			}
 
@@ -787,105 +751,39 @@ void * readIndex (SCHEMA * schema, int recordsIndexed, int fieldPosition) {
 	return index;
 }
 
-int compareInt (void * index, int offset1, int offset2, int size) {
-	char * transition = index;
-	int * number1, * number2;
-
-	size += sizeof (int);
-
-	number1 = (int *) (transition + offset1 * (size));
-	number2 = (int *) (transition + offset2 * (size));
-
-	return *number2 - *number1;
+int compareInt (void * number1, void * number2) {
+	return *((int *) number2) - *((int *) number1);
 }
 
-void swapInt (void * index, int offset1, int offset2, int size) {
-	char * transition = index;
-	int * number1, * number2;
-	void * numberAux;
+int compareDouble (void * number1, void * number2) {
+	double result;
 
-	size += sizeof (int);
+	result = *((double *)number2) - *((double *)number1);
 
-	numberAux = malloc (size);
-
-	number1 = (int *) (transition + offset1 * (size));
-	number2 = (int *) (transition + offset2 * (size));
-
-	memcpy (numberAux, (void *) number2, size);
-	memcpy ((void *) number2, (void *) number1, size);
-	memcpy ((void *) number1, numberAux, size);
-
-	free (numberAux);
+	return result == 0.0? 0 : result < 0.0 ? -1 : 1;
 }
 
-int compareDouble (void * index, int offset1, int offset2, int size) {
-	char * transition = index;
-	double * number1, * number2;
-
-	size += sizeof (int);
-
-	number1 = (double *) (transition + offset1 * (size));
-	number2 = (double *) (transition + offset2 * (size));
-
-	return *number2 - *number1 < 0.0? -1 : 1;
+int compareString (void * string1, void * string2) {
+	return strcmp ((char *) string2, (char *) string1);
 }
 
-void swapDouble (void * index, int offset1, int offset2, int size) {
-	char * transition = index;
-	double * number1, * number2;
-	void * numberAux;
+void swapFields (void * field1, void * field2, int size) {
+	void * aux;
 
-	size += sizeof (int);
+	aux = malloc (size);
 
-	numberAux = malloc (size);
+	memcpy (aux, field2, size);
+	memcpy (field2, field1, size);
+	memcpy (field1, aux, size);
 
-	number1 = (double *) (transition + offset1 * (size));
-	number2 = (double *) (transition + offset2 * (size));
-
-	memcpy (numberAux, (void *) number2, size);
-	memcpy ((void *) number2, (void *) number1, size);
-	memcpy ((void *) number1, numberAux, size);
-
-	free (numberAux);
-}
-
-int compareString (void * index, int offset1, int offset2, int size) {
-	char * transition = index;
-	char * string1, * string2;
-
-	size += sizeof (int);
-
-	string1 = (char *) (transition + offset1 * (size));
-	string2 = (char *) (transition + offset2 * (size));
-
-	return strcmp (string2, string1);
-}
-
-void swapString (void * index, int offset1, int offset2, int size) {
-	char * transition = index;
-	char * string1, * string2;
-	void * stringAux;
-
-	size += sizeof (int);
-
-	stringAux = malloc (size);
-
-	string1 = (char *) (transition + offset1 * (size));
-	string2 = (char *) (transition + offset2 * (size));
-
-	memcpy (stringAux, (void *) string2, size);
-	memcpy ((void *) string2, (void *) string1, size);
-	memcpy ((void *) string1, stringAux, size);
-
-	free (stringAux);
+	free (aux);
 }
 
 void orderIndex (SCHEMA * schema, int recordsIndexed) {
 	void * index = NULL;
-	int i, j, k;
+	int i, j, k, offset, size;
 	FILE * p_index = NULL;
-	int (*compare) (void * index, int offset1, int offset2, int size);
-	void (*swap) (void * index, int offset1, int offset2, int size);
+	int (*compare) (void *, void *);
 
 	for (i = 0; i < schema->fieldsNumber; i++) {
 		if (schema->fields[i].order) {
@@ -893,22 +791,25 @@ void orderIndex (SCHEMA * schema, int recordsIndexed) {
 
 			if (!strcmp (schema->fields[i].type, "int")) {
 				compare = &compareInt;
-				swap = &swapInt;
 			}
 			else if (!strcmp (schema->fields[i].type, "double")) {
 				compare = &compareDouble;
-				swap = &swapDouble;
 			}
 			else {
 				compare = &compareString;
-				swap = &swapString;
 			}
 
-			for (j = 1; j < recordsIndexed; j++)
-				for (k = 0; k < recordsIndexed - j; k++)
-					if (compare (index, k, k + 1, schema->fields[i].size) < 0) {
-						swap (index, k, (k + 1), schema->fields[i].size);
+			size = sizeof (int) + schema->fields[i].size;
+
+			for (j = 1; j < recordsIndexed; j++) {
+				for (k = 0; k < recordsIndexed - j; k++) {
+					offset = k * size;
+					if (compare ((char *) index + offset, (char *) index + offset + size) < 0) {
+						swapFields ((char *) index + offset, (char *) index + offset + size, size);
 					}
+				}
+			}
+
 
 			p_index = openIndexFile (schema, "w", i);
 			fwrite (index, (schema->fields[i].size + sizeof (int)), recordsIndexed, p_index);
@@ -926,7 +827,7 @@ void insertData (SCHEMA * schema, int * recordsNumber) {
 	double newDouble;
 	char * newString, *auxString;
 
-	p_data = openDataFile (schema, "a");
+	p_data = openDataFile (schema, "a+");
 	*recordsNumber += 1;
 
 	for (i = 0; i < schema->fieldsNumber; i++) {
@@ -944,9 +845,11 @@ void insertData (SCHEMA * schema, int * recordsNumber) {
 			if (i > 0 && strcmp (schema->fields[i - 1].type, "char")) fgetc (stdin);
 			auxString = readUntilChar (stdin, '\n', schema->fields[i].size);
 			newString = (char *) calloc (schema->fields[i].size, sizeof (char));
+
 			strcpy (newString, auxString);
-			free (auxString);
 			data = (void *) newString;
+
+			free (auxString);
 		}
 
 		fwrite (data, schema->fields[i].size, 1, p_data);
@@ -956,216 +859,92 @@ void insertData (SCHEMA * schema, int * recordsNumber) {
 	fclose (p_data);
 }
 
-int sequentialInt (SCHEMA * schema, int position, int recordsNumber, int recordsIndexed, int * key, int * tries) {
-	int offset, internOffset, max;
-	FILE * p_data = NULL;
-	int * data = NULL;
-
-	internOffset = getInternOffset (schema, position);
-	max = recordsNumber * schema->size;
-
-	data = malloc (schema->fields[position].size);
-	p_data = openDataFile (schema, "r");
-
-	for (offset = recordsIndexed * schema->size + internOffset; offset < max; offset += schema->size) {
-		(*tries)++;
-		fseek (p_data, offset, SEEK_SET);
-		fread ((void *) data, schema->fields[position].size, 1, p_data);
-		if (*data == *key) {
-			free (data);
-			fclose (p_data);
-			offset -= getInternOffset (schema, position);
-			return offset;
-		}
-	}
-
-	free (data);
-	fclose (p_data);
-	return -1;
-}
-
-int sequentialDouble (SCHEMA * schema, int position, int recordsNumber, int recordsIndexed, double * key, int * tries) {
-	int offset, internOffset, max;
-	FILE * p_data = NULL;
-	double * data = NULL;
-
-	internOffset = getInternOffset (schema, position);
-	max = recordsNumber * schema->size;
-
-	data = malloc (schema->fields[position].size);
-	p_data = openDataFile (schema, "r");
-
-	for (offset = recordsIndexed * schema->size + internOffset; offset < max; offset += schema->size) { 
-		(*tries)++;
-		fseek (p_data, offset, SEEK_SET);
-		fread ((void *) data, schema->fields[position].size, 1, p_data);
-		if (*data == *key) {
-			free (data);
-			fclose (p_data);
-			offset -= getInternOffset (schema, position);
-			return offset;
-		}
-	}
-
-	free (data);
-	fclose (p_data);
-	return -1;
-}
-
-int sequentialString (SCHEMA * schema, int position, int recordsNumber, int recordsIndexed, char * key, int * tries) {
-	int offset, internOffset, max;
-	FILE * p_data = NULL;
-	char * data = NULL;
-
-	internOffset = getInternOffset (schema, position);
-	max = recordsNumber * schema->size;
-
-	data = malloc (schema->fields[position].size);
-	p_data = openDataFile (schema, "r");
-
-	for (offset = recordsIndexed * schema->size + internOffset; offset < max; offset += schema->size) { 
-		(*tries)++;
-		fseek (p_data, offset, SEEK_SET);
-		fread ((void *) data, schema->fields[position].size, 1, p_data);
-		if (!strcmp (data, key)) {
-			free (data);
-			fclose (p_data);
-			offset -= getInternOffset (schema, position);
-			return offset;
-		}
-	}
-
-	free (data);
-	fclose (p_data);
-	return -1;
-}
-
 int sequentialSearch (SCHEMA * schema, int position, int recordsNumber, int recordsIndexed, void * key, int * tries) {
+	int offset, internOffset, max;
+	FILE * p_data = NULL;
+	void * data = NULL;
+	int (*compare) (void *, void *);
+
+	internOffset = getInternOffset (schema, position);
+	max = recordsNumber * schema->size;
+
+	data = malloc (schema->fields[position].size);
+	p_data = openDataFile (schema, "r");
+
 	if (!strcmp (schema->fields[position].type, "int")) {
-		return sequentialInt (schema, position, recordsNumber, recordsIndexed, (int *) key, tries);
+		compare = &compareInt;
 	}
 	else if (!strcmp (schema->fields[position].type, "double")) {
-		return sequentialDouble (schema, position, recordsNumber, recordsIndexed, (double *) key, tries);
+		compare = &compareDouble;
 	}
 	else {
-		return sequentialString (schema, position, recordsNumber, recordsIndexed, (char *) key, tries);
+		compare = &compareString;
 	}
+
+	for (offset = recordsIndexed * schema->size + internOffset; offset < max; offset += schema->size) { 
+		(*tries)++;
+		fseek (p_data, offset, SEEK_SET);
+		fread (data, schema->fields[position].size, 1, p_data);
+
+		if (!compare (data, key)) {
+			free (data);
+			fclose (p_data);
+			offset -= getInternOffset (schema, position);
+			return offset;
+		}
+	}
+
+	free (data);
+	fclose (p_data);
+	return -1;
 }
 
-/* Era possível fazer a busca mais genérica, mas isso resultaria em muitos condicionais (lentidão). */
-int binaryInt (SCHEMA * schema, int position, int begin, int end, int * key, int * tries) {
+int binarySearch (SCHEMA * schema, int position, int begin, int end, void * key, int * tries) {
 	int middle;
-	int * found = NULL;
+	void * found = NULL;
 	FILE * p_index = NULL;
+	int (*compare) (void *, void *);
 
 	(*tries)++;
 
 	if (begin > end) return -1;
 
 	middle = (begin + end) / 2;
+
 	found = malloc (schema->fields[position].size);
 	p_index = openIndexFile (schema, "r", position);
-	fseek (p_index, middle * (schema->fields[position].size + sizeof (int)), SEEK_SET);
-	fread ((void *) found, schema->fields[position].size, 1, p_index);
 
-	if (*found == *key) {
-		fread (found, schema->fields[position].size, 1, p_index);
-		middle = *((int *) found);/* para economizar variáveis a middle guarda o deslocamento. */
-		free (found);
-		fclose (p_index);
-		return middle;
+	fseek (p_index, middle * (schema->fields[position].size + sizeof (int)), SEEK_SET);
+	fread (found, schema->fields[position].size, 1, p_index);
+
+	if (!strcmp (schema->fields[position].type, "int")) {
+		compare = &compareInt;
 	}
-	else if (*found > *key) {
-		free (found);
-		fclose (p_index);
-		return binaryInt (schema, position, begin, middle - 1, key, tries);
+	else if (!strcmp (schema->fields[position].type, "double")) {
+		compare = &compareDouble;
 	}
 	else {
-		free (found);
-		fclose (p_index);
-		return binaryInt (schema, position, middle + 1, end, key, tries);
+		compare = &compareString;
 	}
-}
 
-/* Era possível fazer a busca mais genérica, mas isso resultaria em muitos condicionais (lentidão). */
-int binaryDouble (SCHEMA * schema, int position, int begin, int end, double * key, int * tries) {
-	int middle;
-	double * found = NULL;
-	FILE * p_index = NULL;
-
-	(*tries)++;
-
-	if (begin > end) return -1;
-
-	middle = (begin + end) / 2;
-	found = malloc (schema->fields[position].size);
-	p_index = openIndexFile (schema, "r", position);
-	fseek (p_index, middle * (schema->fields[position].size + sizeof (int)), SEEK_SET);
-	fread ((void *) found, schema->fields[position].size, 1, p_index);
-
-	if (*found == *key) {
-		fread (found, sizeof (double), 1, p_index);
-		middle = *((int *) found);/* para economizar variáveis a middle guarda o deslocamento. */
-		free (found);
-		fclose (p_index);
-		return middle;
-	}
-	else if (*found > *key) {
-		free (found);
-		fclose (p_index);
-		return binaryDouble (schema, position, begin, middle - 1, key, tries);
-	}
-	else {
-		free (found);
-		fclose (p_index);
-		return binaryDouble (schema, position, middle + 1, end, key, tries);
-	}
-}
-
-/* Era possível fazer a busca mais genérica, mas isso resultaria em muitos condicionais (lentidão). */
-int binaryString (SCHEMA * schema, int position, int begin, int end, char * key, int * tries) {
-	int middle;
-	char * found = NULL;
-	FILE * p_index = NULL;
-
-	(*tries)++;
-
-	if (begin > end) return -1;
-
-	middle = (begin + end) / 2;
-	found = malloc (schema->fields[position].size);
-	p_index = openIndexFile (schema, "r", position);
-	fseek (p_index, middle * (schema->fields[position].size + sizeof (int)), SEEK_SET);
-	fread ((void *) found, schema->fields[position].size, 1, p_index);
-
-	if (strcmp (found, key) == 0) {
+	if (compare (found, key) == 0) {
 		fread (found, sizeof (int), 1, p_index);
-		middle = *((int *) found);/* para economizar variáveis a middle guarda o deslocamento. */
+
+		middle = *((int *) found);
+
 		free (found);
 		fclose (p_index);
 		return middle;
 	}
-	else if (strcmp (found, key) > 0) {
+	else if (compare (found, key) < 0) {
 		free (found);
 		fclose (p_index);
-		return binaryString (schema, position, begin, middle - 1, key, tries);
+		return binarySearch (schema, position, begin, middle - 1, key, tries);
 	}
 	else {
 		free (found);
 		fclose (p_index);
-		return binaryString (schema, position, middle + 1, end, key, tries);
-	}
-}
-
-int binarySearch (SCHEMA * schema, int position, int recordsIndexed, void * key, int * tries) {
-	if (!strcmp (schema->fields[position].type, "int")) {
-		return binaryInt (schema, position, 0, recordsIndexed - 1, (int *) key, tries);
-	}
-	else if (!strcmp (schema->fields[position].type, "double")) {
-		return binaryDouble (schema, position, 0, recordsIndexed - 1, (double *) key, tries);
-	}
-	else {
-		return binaryString (schema, position, 0, recordsIndexed - 1, (char *) key, tries);
+		return binarySearch (schema, position, middle + 1, end, key, tries);
 	}
 }
 
@@ -1201,21 +980,25 @@ void selectIt (SCHEMA * schema, int recordsNumber, int recordsIndexed) {
 
 	key = getKey (schema, i);
 	if (strcmp (schema->fields[i].type, "char")) fgetc (stdin);
+
 	interest = readUntilChar (stdin, '\n', BUFFER_SIZE);
 	for (j = 0; strcmp (interest, schema->fields[j].name) != 0; j++);
 
 	if (!strcmp (schema->fields[i].name, field) && schema->fields[i].order) {
-		found = binarySearch (schema, i, recordsIndexed, key, &tries);
+		found = binarySearch (schema, i, 0, recordsIndexed - 1, key, &tries);
 
 		if (found >= 0) {
 			printf ("%d\n", tries);
+
 			p_data = openDataFile (schema, "r");
 			fseek (p_data, found + getInternOffset (schema, j), SEEK_SET);
 			data = malloc (schema->fields[j].size);
 			fread (data, schema->fields[j].size, 1, p_data);
-			fclose (p_data);
+
 			fprint (schema->fields[j].type, data, 0, stdout);
 			printf ("\n");
+
+			fclose (p_data);
 			free (data);
 		}
 
@@ -1229,13 +1012,16 @@ void selectIt (SCHEMA * schema, int recordsNumber, int recordsIndexed) {
 			}
 			else {
 				printf ("%d\n", tries);
+
 				p_data = openDataFile (schema, "r");
 				fseek (p_data, found + getInternOffset (schema, j), SEEK_SET);
 				data = malloc (schema->fields[j].size);
 				fread (data, schema->fields[j].size, 1, p_data);
-				fclose (p_data);
+
 				fprint (schema->fields[j].type, data, 0, stdout);
 				printf ("\n");
+
+				fclose (p_data);
 				free (data);
 			}
 		}
@@ -1248,9 +1034,3 @@ void selectIt (SCHEMA * schema, int recordsNumber, int recordsIndexed) {
 	free (key);
 	free (field);
 }
-
-/*	TODO: utilizar ponteiro de função na createIndex e outras para reduzir o número de condições;
- *	TODO: trocar o bubble sort pelo merge sort;
- *	TODO: trocar as funções de comparação e troca por funções que recebem dois ponteiros;
- *	TODO: generalizar as funções busca binária e busca sequencial.
- */
