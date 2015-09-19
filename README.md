@@ -35,3 +35,9 @@ ASD | 13/09/15 | 13:13
 --Adicionada a funcionalidade de atualizar o índice.
 ASD | 19/09/15 | 00:26
 ---------------------------------------------------------------------------------------------------------
+--Modificada a função de criar índices .idx para que não seja necessário ler o .data inteiro.
+--Excluídas funções que só serviam para que a função de criar índices funcionasse.
+--Adicionada uma função para obter a quantidade de arquivos do .data.
+ASD | 19/09/15 | 10:04
+---------------------------------------------------------------------------------------------------------
+

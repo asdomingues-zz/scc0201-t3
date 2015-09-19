@@ -1,5 +1,5 @@
 COMPILER=gcc
-SOURCE=./source/*.c
+SOURCE=./source/main2.c
 INCLUDES=./includes
 BUILD=./build/
 OUTPUT=main

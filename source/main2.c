@@ -49,6 +49,16 @@ char * readUntilChar (FILE *, const char, int);
  */
 SCHEMA * getSchema (const char *);
 
+/*	getRecordsNumber ()
+ *
+ *	Função que conta a quantidade de registros no .data baseada em uma descrição de SCHEMA.
+ *	- Parâmetros:
+ *		SCHEMA *: endereço da estrutura com as informações sobre o registro descrito no .schema.
+ *	- Retorno:
+ *		int: quantidade de registros no .data.
+ */
+int getRecordsNumber (SCHEMA *);
+
 /*	dumpSchema ()
  *
  *	Função para imprimir a descrição do arquivo de dados baseado no schema fornecido.
@@ -126,42 +136,6 @@ void fprintDouble (void *, int, FILE *);
  *		não há.
  */
 void fprintString (void *, int, FILE *);
-
-/*	fwriteInt ()
- *
- *	Função para copiar um inteiro da memória para um arquivo.
- *	- Parâmetros:
- *		void *: endereço do bloco de memória que contém o inteiro a ser copiado;
- *		int: deslocamento até a posição exata do inteiro no bloco;
- *		FILE *: arquivo de dados em que o inteiro deve ser gravado.
- *	- Retorno:
- *		não há.
- */
-void fwriteInt (void *, int, FILE *);
-
-/*	fwriteDouble ()
- *
- *	Função para copiar um double da memória para um arquivo.
- *	- Parâmetros:
- *		void *: endereço do bloco de memória que contém o double a ser copiado;
- *		int: deslocamento até a posição exata do double no bloco;
- *		FILE *: arquivo de dados em que o double deve ser gravado.
- *	- Retorno:
- *		não há.
- */
-void fwriteDouble (void *, int, FILE *);
-
-/*	fwriteString ()
- *
- *	Função para copiar uma string da memória para um arquivo.
- *	- Parâmetros:
- *		void *: endereço do bloco de memória que contém a string a ser copiada;
- *		int: deslocamento até a posição exata da string no bloco;
- *		FILE *: arquivo de dados em que a string deve ser gravada.
- *	- Retorno:
- *		não há.
- */
-void fwriteString (void *, int, FILE *, int);
 
 /*	getInternOffset ()
  *
@@ -446,8 +420,9 @@ int main (int argc, char * argv[]) {
 	schemaName = readUntilChar (stdin, '\n', BUFFER_SIZE);
 	schema = getSchema (schemaName);
 
+	recordsNumber = getRecordsNumber (schema);
+	createIndex (schema, recordsNumber);
 	recordsIndexed = recordsNumber;
-	createIndex (schema, recordsIndexed);
 	orderIndex (schema, recordsIndexed);
 
 	while (strcmp (instruction = readUntilChar (stdin, '\n', BUFFER_SIZE), "exit") != 0) {
@@ -457,8 +432,8 @@ int main (int argc, char * argv[]) {
 		else if (!strcmp (instruction, "insert")) insertData (schema, &recordsNumber);
 		else if (!strcmp (instruction, "select")) selectIt (schema, recordsNumber, recordsIndexed);
 		else if (!strcmp (instruction, "update_index")) {
+			createIndex (schema, recordsNumber);
 			recordsIndexed = recordsNumber;
-			createIndex (schema, recordsIndexed);
 			orderIndex (schema, recordsIndexed);
 		}
 		free (instruction);
@@ -572,6 +547,19 @@ SCHEMA * getSchema (const char * schemaName) {
 	return schema;
 }
 
+int getRecordsNumber (SCHEMA * schema) {
+	FILE * p_data;
+	int size;
+
+	p_data = openDataFile (schema, "r");
+	fseek (p_data, 0, SEEK_END);
+	size = ftell (p_data);
+	fclose (p_data);
+	size /= schema->size;
+
+	return size;
+}
+
 void dumpSchema (SCHEMA * schema) {
 	int i;
 
@@ -663,39 +651,11 @@ void fprintString (void * pointer, int offset, FILE * output) {
 	fprintf (output, "%s", string);
 }
 
-void fwriteInt (void * data, int offset, FILE * output) {
-	char * transition;
-
-	transition = (char *) data;
-	transition += offset;
-
-	fwrite ((void *) transition, sizeof(int), 1, output);
-}
-
-void fwriteDouble (void * data, int offset, FILE * output) {
-	char * transition;
-
-	transition = (char *) data;
-	transition += offset;
-
-	fwrite ((void *) transition, sizeof(double), 1, output);
-}
-
-void fwriteString (void * data, int offset, FILE * output, int size) {
-	char * transition;
-
-	transition = (char *) data;
-	transition += offset;
-
-	fwrite ((void *) transition, size, 1, output);
-}
-
 int getInternOffset (SCHEMA * schema, int position) {
 	int offset, i;
 
-	for (offset = 0, i =0; i < position; i++) {
+	for (offset = 0, i = 0; i < position; i++)
 		offset += schema->fields[i].size;
-	}
 
 	return offset;
 }
@@ -722,28 +682,35 @@ FILE * openIndexFile (SCHEMA * schema, const char * mode, int fieldPosition) {
 	return p_index;
 }
 
-void createIndex (void * data, SCHEMA * schema, int recordsIndexed) {
+void createIndex (SCHEMA * schema, int recordsNumber) {
 	int i, j, internOffset;
-	FILE * idx;
+	FILE * p_index, * p_data;
+	void * data = NULL;
+	char * next = NULL;
+
+	data = malloc (schema->size * sizeof (char));
+	p_data = openDataFile (schema, "r");
 
 	for (i = 0; i < schema->fieldsNumber; i++) {
 		if (schema->fields[i].order) {
-			idx = openIndexFile (schema, "w+", i);
+			p_index = openIndexFile (schema, "w+", i);
 			internOffset = getInternOffset (schema, i);
+			next = (char *) data;
+			next += internOffset;
 
-			for (j = 0; j < recordsIndexed * schema->size; j += schema->size) {
-				if (strcmp (schema->fields[i].type, "int") == 0) 
-					fwriteInt (data, j + internOffset, idx);
-				else if (strcmp (schema->fields[i].type, "double") == 0)
-					fwriteDouble (data, j + internOffset, idx);
-				else 
-					fwriteString (data, j + internOffset, idx, schema->fields[i].size);
-				fwrite ((void *) &j, sizeof (int), 1, idx);
+			for (j = 0; j < recordsNumber * schema->size; j += schema->size) {
+				fread (data, schema->size, 1, p_data);
+				fwrite ((void *) next, schema->fields[i].size, 1, p_index);
+				fwrite ((void *) &j, sizeof (int), 1, p_index);
 			}
 
-			fclose (idx);
+			fclose (p_index);
+			rewind (p_data);
 		}
 	}
+
+	fclose (p_data);
+	free (data);
 }
 
 void fprint (const char * type, void * pointer, int offset, FILE * output) {
@@ -1282,8 +1249,7 @@ void selectIt (SCHEMA * schema, int recordsNumber, int recordsIndexed) {
 	free (field);
 }
 
-/*	TODO: gravar no index um dado por vez;
- *	TODO: utilizar ponteiro de função na createIndex e outras para reduzir o número de condições;
+/*	TODO: utilizar ponteiro de função na createIndex e outras para reduzir o número de condições;
  *	TODO: trocar o bubble sort pelo merge sort;
  *	TODO: trocar as funções de comparação e troca por funções que recebem dois ponteiros;
  *	TODO: generalizar as funções busca binária e busca sequencial.
