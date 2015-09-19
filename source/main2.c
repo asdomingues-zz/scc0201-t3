@@ -190,13 +190,12 @@ FILE * openIndexFile (SCHEMA *, const char *, int);
  *
  *	Função que usa a descrição de um .schema e um arquivo de dados .data para criar um índice .idx.
  *	- Parâmetros:
- *		void *: ponteiro para o conteúdo de um arquivo de dados;
  *		SCHEMA *: endereço da estrutura que descreve os registros do .data;
  *		int: quantidade de registros que o .data possui.
  *	- Retorno:
  *		não há.
  */
-void createIndex (void *, SCHEMA *, int);
+void createIndex (SCHEMA *, int);
 
 /*	fprint ()
  *
@@ -340,8 +339,10 @@ void insertData (SCHEMA *, int *);
  *	Função para buscar em um arquivo .data por uma chave inteira não indexada no arquivo .data.
  *	- Parâmetros:
  *		SCHEMA *: endereço da estrutura com as características descritas pelo .schema;
- *		int: */
- int sequentialInt (SCHEMA *, int, int, int, int *, int *);
+ *		int: número do campo pelo qual a busca será realizada;
+ *
+ */
+int sequentialInt (SCHEMA *, int, int, int, int *, int *);
 
 int sequentialDouble (SCHEMA *, int, int, int, double *, int *);
 
@@ -439,18 +440,15 @@ int main (int argc, char * argv[]) {
 	char * schemaName;
 	char * instruction;
 	SCHEMA * schema;
-	void * data;
 	int recordsNumber;
 	int recordsIndexed;
 
 	schemaName = readUntilChar (stdin, '\n', BUFFER_SIZE);
 	schema = getSchema (schemaName);
 
-	data = readData (schema, &recordsNumber);
 	recordsIndexed = recordsNumber;
-	createIndex (data, schema, recordsIndexed);
+	createIndex (schema, recordsIndexed);
 	orderIndex (schema, recordsIndexed);
-	free (data);
 
 	while (strcmp (instruction = readUntilChar (stdin, '\n', BUFFER_SIZE), "exit") != 0) {
 		if (!strcmp (instruction, "dump_schema")) dumpSchema (schema);
@@ -459,11 +457,9 @@ int main (int argc, char * argv[]) {
 		else if (!strcmp (instruction, "insert")) insertData (schema, &recordsNumber);
 		else if (!strcmp (instruction, "select")) selectIt (schema, recordsNumber, recordsIndexed);
 		else if (!strcmp (instruction, "update_index")) {
-			data = readData (schema, &recordsNumber);
 			recordsIndexed = recordsNumber;
-			createIndex (data, schema, recordsIndexed);
+			createIndex (schema, recordsIndexed);
 			orderIndex (schema, recordsIndexed);
-			free (data);
 		}
 		free (instruction);
 	}

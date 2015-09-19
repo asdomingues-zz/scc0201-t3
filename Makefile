@@ -5,7 +5,7 @@ BUILD=./build/
 OUTPUT=main
 WARNING=-ansi -g -Wall
 VALGRIND=valgrind --show-leak-kinds=all --leak-check=full --track-origins=yes
-CASE=< teste.txt
+CASE=< teste2.txt
 
 all: test
 

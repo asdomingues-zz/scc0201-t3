@@ -1,0 +1,14 @@
+iris.schema
+insert
+197
+6.5
+3.0
+5.2
+2.0
+virginica
+select
+species
+setosa
+id
+exit
+

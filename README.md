@@ -30,3 +30,8 @@ ASD | 12/09/15 | 19:29
 --Documentadas todas as novas funções.
 ASD | 13/09/15 | 13:13
 ---------------------------------------------------------------------------------------------------------
+--Criadas funções para busca binária e sequencial.
+--Documentadas as funções de busca.
+--Adicionada a funcionalidade de atualizar o índice.
+ASD | 19/09/15 | 00:26
+---------------------------------------------------------------------------------------------------------

@@ -22,11 +22,6 @@ select
 id
 197
 petal_length
-update_index
-select
-id
-197
-petal_length
 select
 id
 201
@@ -35,5 +30,15 @@ select
 petal_length
 4.90
 id
+select
+species
+setosa
+id
+update_index
+select
+id
+197
+petal_length
+dump_index
 exit
 
